@@ -1,0 +1,18 @@
+query Tasks($orderKey: TaskOrderKey, $orderDirection: OrderDirection) {
+  tasks(orderKey: $orderKey, orderDirection: $orderDirection) {
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+    edges {
+      node {
+        id
+        title
+        description
+        createdAt
+        deadline
+        isCompleted
+      }
+    }
+  }
+}
