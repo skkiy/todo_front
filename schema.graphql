@@ -4,6 +4,9 @@ interface Node {
 
 type User {
   id: ID!
+  name: String!
+  email: String!
+  twitter: String
 }
 
 type Task implements Node {
@@ -16,28 +19,32 @@ type Task implements Node {
 }
 
 type PageInfo {
-  endCursor: String!
+  startCursor: Cursor!
+  endCursor: Cursor!
+  hasPreviousPage: Boolean!
   hasNextPage: Boolean!
 }
 
 interface Connection {
   pageInfo: PageInfo!
   edges: [Edge]!
+  totalCount: Int!
 }
 
 interface Edge {
   cursor: String!
-  node: Node!
+  node: Node
 }
 
 type TaskEdge implements Edge {
   cursor: String!
-  node: Task!
+  node: Task
 }
 
 type TaskConnection implements Connection {
   pageInfo: PageInfo!
   edges: [TaskEdge]!
+  totalCount: Int!
 }
 
 enum TaskOrderKey {
@@ -50,8 +57,48 @@ enum OrderDirection {
   DESC
 }
 
+input FilterCondition {
+  filterWord: String
+  user: ID
+  createdAt: Time
+  deadline: Time
+  isCompleted: Boolean
+}
+
+input PageCondition {
+  backward: BackwardPagination
+  forward: ForwardPagination
+  pageNumber: Int!
+  limit: Int
+}
+
+input BackwardPagination {
+  last: Int!
+  before: Cursor
+}
+
+input ForwardPagination {
+  first: Int!
+  after: Cursor
+}
+
+input EdgeOrder {
+  key: OrderKey!
+  direction: OrderDirection!
+}
+
+input OrderKey {
+  task: TaskOrderKey
+}
+
 type Query {
-  tasks(orderKey: TaskOrderKey, orderDirection: OrderDirection): TaskConnection!
+  tasks(
+    filterCondition: FilterCondition
+    pageCondition: PageCondition
+    edgeOrder: EdgeOrder
+  ): TaskConnection!
+  task(id: ID): Task!
+  user(id: ID, name: String!, email: String!, twitter: String): User
 }
 
 input CreateTaskInput {
@@ -64,13 +111,22 @@ input UpdateTaskInput {
   id: ID!
   title: String
   description: String
-  deadline: String
+  deadline: Time
   isCompleted: Boolean
+}
+
+input UpdateUserInput {
+  id: ID!
+  name: String!
+  email: String!
+  twitter: String
 }
 
 type Mutation {
   createTask(input: CreateTaskInput!): Task!
   updateTask(input: UpdateTaskInput!): Task
+  updateUser(input: UpdateUserInput!): User
 }
 
 scalar Time
+scalar Cursor

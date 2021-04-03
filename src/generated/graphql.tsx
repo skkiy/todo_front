@@ -13,6 +13,7 @@ export type Scalars = {
   Int: number
   Float: number
   Time: any
+  Cursor: any
 }
 
 export type Node = {
@@ -22,6 +23,9 @@ export type Node = {
 export type User = {
   __typename?: "User"
   id: Scalars["ID"]
+  name: Scalars["String"]
+  email: Scalars["String"]
+  twitter?: Maybe<Scalars["String"]>
 }
 
 export type Task = Node & {
@@ -36,30 +40,34 @@ export type Task = Node & {
 
 export type PageInfo = {
   __typename?: "PageInfo"
-  endCursor: Scalars["String"]
+  startCursor: Scalars["Cursor"]
+  endCursor: Scalars["Cursor"]
+  hasPreviousPage: Scalars["Boolean"]
   hasNextPage: Scalars["Boolean"]
 }
 
 export type Connection = {
   pageInfo: PageInfo
   edges: Array<Maybe<Edge>>
+  totalCount: Scalars["Int"]
 }
 
 export type Edge = {
   cursor: Scalars["String"]
-  node: Node
+  node?: Maybe<Node>
 }
 
 export type TaskEdge = Edge & {
   __typename?: "TaskEdge"
   cursor: Scalars["String"]
-  node: Task
+  node?: Maybe<Task>
 }
 
 export type TaskConnection = Connection & {
   __typename?: "TaskConnection"
   pageInfo: PageInfo
   edges: Array<Maybe<TaskEdge>>
+  totalCount: Scalars["Int"]
 }
 
 export enum TaskOrderKey {
@@ -72,14 +80,62 @@ export enum OrderDirection {
   Desc = "DESC",
 }
 
+export type FilterCondition = {
+  filterWord?: Maybe<Scalars["String"]>
+  user?: Maybe<Scalars["ID"]>
+  createdAt?: Maybe<Scalars["Time"]>
+  deadline?: Maybe<Scalars["Time"]>
+  isCompleted?: Maybe<Scalars["Boolean"]>
+}
+
+export type PageCondition = {
+  backward?: Maybe<BackwardPagination>
+  forward?: Maybe<ForwardPagination>
+  pageNumber: Scalars["Int"]
+  limit?: Maybe<Scalars["Int"]>
+}
+
+export type BackwardPagination = {
+  last: Scalars["Int"]
+  before?: Maybe<Scalars["Cursor"]>
+}
+
+export type ForwardPagination = {
+  first: Scalars["Int"]
+  after?: Maybe<Scalars["Cursor"]>
+}
+
+export type EdgeOrder = {
+  key: OrderKey
+  direction: OrderDirection
+}
+
+export type OrderKey = {
+  task?: Maybe<TaskOrderKey>
+}
+
 export type Query = {
   __typename?: "Query"
   tasks: TaskConnection
+  task: Task
+  user?: Maybe<User>
 }
 
 export type QueryTasksArgs = {
-  orderKey?: Maybe<TaskOrderKey>
-  orderDirection?: Maybe<OrderDirection>
+  filterCondition?: Maybe<FilterCondition>
+  pageCondition?: Maybe<PageCondition>
+  edgeOrder?: Maybe<EdgeOrder>
+}
+
+export type QueryTaskArgs = {
+  id?: Maybe<Scalars["ID"]>
+}
+
+export type QueryUserArgs = {
+  id?: Maybe<Scalars["ID"]>
+  name: Scalars["String"]
+  email: Scalars["String"]
+  twitter?: Maybe<Scalars["String"]>
 }
 
 export type CreateTaskInput = {
@@ -92,14 +148,22 @@ export type UpdateTaskInput = {
   id: Scalars["ID"]
   title?: Maybe<Scalars["String"]>
   description?: Maybe<Scalars["String"]>
-  deadline?: Maybe<Scalars["String"]>
+  deadline?: Maybe<Scalars["Time"]>
   isCompleted?: Maybe<Scalars["Boolean"]>
+}
+
+export type UpdateUserInput = {
+  id: Scalars["ID"]
+  name: Scalars["String"]
+  email: Scalars["String"]
+  twitter?: Maybe<Scalars["String"]>
 }
 
 export type Mutation = {
   __typename?: "Mutation"
   createTask: Task
   updateTask?: Maybe<Task>
+  updateUser?: Maybe<User>
 }
 
 export type MutationCreateTaskArgs = {
@@ -110,9 +174,14 @@ export type MutationUpdateTaskArgs = {
   input: UpdateTaskInput
 }
 
+export type MutationUpdateUserArgs = {
+  input: UpdateUserInput
+}
+
 export type TasksQueryVariables = Exact<{
-  orderKey?: Maybe<TaskOrderKey>
-  orderDirection?: Maybe<OrderDirection>
+  filterCondition?: Maybe<FilterCondition>
+  pageCondition?: Maybe<PageCondition>
+  edgeOrder?: Maybe<EdgeOrder>
 }>
 
 export type TasksQuery = { __typename?: "Query" } & {
@@ -121,9 +190,11 @@ export type TasksQuery = { __typename?: "Query" } & {
     edges: Array<
       Maybe<
         { __typename?: "TaskEdge" } & {
-          node: { __typename?: "Task" } & Pick<
-            Task,
-            "id" | "title" | "description" | "createdAt" | "deadline" | "isCompleted"
+          node?: Maybe<
+            { __typename?: "Task" } & Pick<
+              Task,
+              "id" | "title" | "description" | "createdAt" | "deadline" | "isCompleted"
+            >
           >
         }
       >
@@ -132,8 +203,12 @@ export type TasksQuery = { __typename?: "Query" } & {
 }
 
 export const TasksDocument = gql`
-  query Tasks($orderKey: TaskOrderKey, $orderDirection: OrderDirection) {
-    tasks(orderKey: $orderKey, orderDirection: $orderDirection) {
+  query Tasks(
+    $filterCondition: FilterCondition
+    $pageCondition: PageCondition
+    $edgeOrder: EdgeOrder
+  ) {
+    tasks(filterCondition: $filterCondition, pageCondition: $pageCondition, edgeOrder: $edgeOrder) {
       pageInfo {
         endCursor
         hasNextPage
@@ -164,8 +239,9 @@ export const TasksDocument = gql`
  * @example
  * const { data, loading, error } = useTasksQuery({
  *   variables: {
- *      orderKey: // value for 'orderKey'
- *      orderDirection: // value for 'orderDirection'
+ *      filterCondition: // value for 'filterCondition'
+ *      pageCondition: // value for 'pageCondition'
+ *      edgeOrder: // value for 'edgeOrder'
  *   },
  * });
  */

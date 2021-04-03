@@ -1,5 +1,9 @@
-query Tasks($orderKey: TaskOrderKey, $orderDirection: OrderDirection) {
-  tasks(orderKey: $orderKey, orderDirection: $orderDirection) {
+query Tasks(
+  $filterCondition: FilterCondition
+  $pageCondition: PageCondition
+  $edgeOrder: EdgeOrder
+) {
+  tasks(filterCondition: $filterCondition, pageCondition: $pageCondition, edgeOrder: $edgeOrder) {
     pageInfo {
       endCursor
       hasNextPage
